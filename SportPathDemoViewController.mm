@@ -61,7 +61,7 @@
     BMKPolygon *pathPloygon;
     BMKPointAnnotation *sportAnnotation;
     SportAnnotationView *sportAnnotationView;
-
+    
     NSMutableArray *sportNodes;//轨迹点
     NSInteger sportNodeNum;//轨迹点数
     NSInteger currentIndex;//当前结点
@@ -81,7 +81,7 @@
     _mapView.zoomLevel = 19;
     _mapView.centerCoordinate = CLLocationCoordinate2DMake(40.056898, 116.307626);
     _mapView.delegate = self; // 此处记得不用的时候需要置nil，否则影响内存的释放
-
+    
     //初始化轨迹点
     [self initSportNodes];
 }
@@ -145,15 +145,15 @@
 - (void)running {
     BMKSportNode *node = [sportNodes objectAtIndex:currentIndex % sportNodeNum];
     sportAnnotationView.imageView.transform = CGAffineTransformMakeRotation(node.angle);
-    [UIView animateWithDuration:node.distance/node.speed animations:^{
-        currentIndex++;
-        BMKSportNode *node = [sportNodes objectAtIndex:currentIndex % sportNodeNum];
-        sportAnnotation.coordinate = node.coordinate;
-    } completion:^(BOOL finished) {
-        [self running];
-    }];
- 
-
+    //    [UIView animateWithDuration:node.distance/node.speed animations:^{
+    //        currentIndex++;
+    //        BMKSportNode *node = [sportNodes objectAtIndex:currentIndex % sportNodeNum];
+    //        sportAnnotation.coordinate = node.coordinate;
+    //    } completion:^(BOOL finished) {
+    //        [self running];
+    //    }];
+    [self updateAnnotation:sportAnnotation coordinate:node.coordinate duration:node.distance/node.speed animated:YES];
+    
 }
 
 #pragma mark - BMKMapViewDelegate
@@ -193,6 +193,33 @@
 
 - (void)mapView:(BMKMapView *)mapView didAddAnnotationViews:(NSArray *)views {
     [self running];
+}
+- (void)updateAnnotation:(BMKPointAnnotation *)annotation
+              coordinate:(CLLocationCoordinate2D)coordinate {
+    if (annotation) {
+        annotation.coordinate = coordinate;
+    }
+}
+
+- (void)updateAnnotation:(BMKPointAnnotation *)annotation
+              coordinate:(CLLocationCoordinate2D)coordinate
+                duration:(NSTimeInterval)duration
+                animated:(BOOL)bAnimated {
+    if (annotation == nil || !CLLocationCoordinate2DIsValid(coordinate)) {
+        return;
+    }
+    if (!bAnimated) {
+        [self updateAnnotation:annotation coordinate:coordinate];
+    } else {
+        [UIView animateWithDuration:duration
+                         animations:^{
+                             [self updateAnnotation:annotation coordinate:coordinate];
+                         }
+                         completion:^(BOOL finished) {
+                             currentIndex++;
+                             [self running];
+                         }];
+    }
 }
 
 @end
